@@ -1,5 +1,6 @@
 import arcade
 import random
+from datetime import datetime
 
 largura_janela = 800
 altura_janela = 600
@@ -15,33 +16,37 @@ class CampoCombate(arcade.Window):
 
     def configurar_jogo(self):
         arcade.set_background_color(arcade.color.YELLOW_ORANGE)
-
-        self.jogo_pausado = False
-        self.disparar_projeteis = False
-        self.tempo_desde_ultimo_disparo = 0
-        self.tempo_espera_proximo_disparo = 10
-        self.velocidade_projetil = 5
-
         self.arquivo_sprite_nave = "venv/Sprites/sprite_nave_espacial.png"
         self.arquivo_sprite_inimigo = "venv/Sprites/sprite_asteroide.png"
         self.arquivo_sprite_projetil = "venv/Sprites/sprite_projetil.png"
 
-        self.jogador = arcade.Sprite(self.arquivo_sprite_nave)
+        self.horario_inicio_fase = datetime.now()
+        self.jogo_pausado = False
 
+        self.jogador = arcade.Sprite(self.arquivo_sprite_nave)
         self.jogador.center_y = self.height / 2
         self.jogador.left = 10
 
+        self.horario_criacao_ultimo_inimigo = datetime.now()
+        self.milissegundos_para_criacao_proximo_inimigo = 950
+        self.velocidade_movimentacao_inimigo = -1
+
+        self.disparar_projeteis = False
+        self.horario_ultimo_disparo = datetime.now()
+        self.milissegundos_para_proximo_disparo = 150
+        self.tempo_minimo_milissegundos_para_proximo_disparo = 80
+        self.velocidade_movimentacao_projetil = 3
+        self.velocidade_maxima_movimentacao_projetil = 5
+
         self.sprites.append(self.jogador)
 
-        arcade.schedule(self.criar_inimigo, 1.0)
-
-    def criar_inimigo(self, delta_time: float):
+    def criar_inimigo(self, velocidade):
         inimigo = MovimentacaoInimigo(self.arquivo_sprite_inimigo)
 
         inimigo.left = random.randint(self.width, self.width + 10)
         inimigo.top = random.randint(10, self.height - 10)
 
-        inimigo.velocity = (-1, 0)
+        inimigo.velocity = (velocidade, 0)
 
         self.sprites_inimigos.append(inimigo)
         self.sprites.append(inimigo)
@@ -90,23 +95,40 @@ class CampoCombate(arcade.Window):
             sprite.center_x = int(sprite.center_x + sprite.change_x * delta_time)
             sprite.center_y = int(sprite.center_y + sprite.change_y * delta_time)
 
-        if self.tempo_desde_ultimo_disparo < self.tempo_espera_proximo_disparo:
-            self.tempo_desde_ultimo_disparo += 1
+        milissegundos_desde_ultimo_inimigo = (datetime.now() - self.horario_criacao_ultimo_inimigo).microseconds / 1000
 
-        if self.disparar_projeteis and self.tempo_desde_ultimo_disparo == self.tempo_espera_proximo_disparo:
+        if milissegundos_desde_ultimo_inimigo >= self.milissegundos_para_criacao_proximo_inimigo:
+            self.criar_inimigo(self.velocidade_movimentacao_inimigo)
+            self.horario_criacao_ultimo_inimigo = datetime.now()
+
+        milissegundos_desde_ultimo_disparo = (datetime.now() - self.horario_ultimo_disparo).microseconds / 1000
+
+        if self.disparar_projeteis and milissegundos_desde_ultimo_disparo >= self.milissegundos_para_proximo_disparo:
             coordenada_x = self.jogador.center_x + 10
             coordenada_y = self.jogador.center_y + 15
 
-            self.criar_projetil(coordenada_x, coordenada_y, 3)
-            self.criar_projetil(coordenada_x, coordenada_y - 30, 3)
+            self.criar_projetil(coordenada_x, coordenada_y, self.velocidade_movimentacao_projetil)
+            self.criar_projetil(coordenada_x, coordenada_y - 30, self.velocidade_movimentacao_projetil)
 
-            self.tempo_desde_ultimo_disparo = 0
+            self.horario_ultimo_disparo = datetime.now()
 
         if self.jogador.top > self.height:
             self.jogador.top = self.height
 
         if self.jogador.bottom < 0:
             self.jogador.bottom = 0
+
+        if (datetime.now() - self.horario_inicio_fase).seconds >= 10:
+            self.milissegundos_para_criacao_proximo_inimigo = self.milissegundos_para_criacao_proximo_inimigo * 0.75
+            self.velocidade_movimentacao_inimigo = self.velocidade_movimentacao_inimigo * 1.25
+
+            if self.milissegundos_para_proximo_disparo > self.tempo_minimo_milissegundos_para_proximo_disparo:
+                self.milissegundos_para_proximo_disparo = self.milissegundos_para_proximo_disparo * 0.75
+
+            if self.velocidade_movimentacao_projetil < self.velocidade_maxima_movimentacao_projetil:
+                self.velocidade_movimentacao_projetil = self.velocidade_movimentacao_projetil * 1.25
+
+            self.horario_inicio_fase = datetime.now()
 
     def on_draw(self):
         arcade.start_render()
