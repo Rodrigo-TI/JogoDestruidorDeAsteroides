@@ -30,6 +30,9 @@ class TelaJogo(arcade.View):
         self.arquivo_sprite_inimigo = "venv/Sprites/sprite_asteroide.png"
         self.arquivo_sprite_projetil = "venv/Sprites/sprite_projetil.png"
 
+        self.arquivo_audio_disparo = arcade.sound.load_sound(":resources:sounds/laser2.wav")
+        self.arquivo_audio_explosao = arcade.sound.load_sound(":resources:sounds/explosion2.wav")
+
         self.score = 0
         self.horario_inicio_fase = datetime.now()
 
@@ -58,7 +61,7 @@ class TelaJogo(arcade.View):
         self.taxa_espalhamento_particula = 8
         self.velocidade_minima_particula = 2.5
         self.faixa_velocidade_particula = 2.5
-        self.quantidade_particulas = 20
+        self.quantidade_particulas = 30
         self.tamanho_particula = 3
         self.chance_particula_brilhar = 0.02
         self.lista_cores_particulas = [arcade.color.GRAY,
@@ -69,7 +72,7 @@ class TelaJogo(arcade.View):
         self.sprites.append(self.jogador)
 
     def criar_inimigo(self, velocidade):
-        inimigo = MovimentacaoInimigo(self.arquivo_sprite_inimigo)
+        inimigo = Inimigo(self.arquivo_sprite_inimigo)
 
         inimigo.left = random.randint(largura_janela, largura_janela + 10)
         inimigo.top = random.randint(15, altura_janela - 55)
@@ -80,7 +83,7 @@ class TelaJogo(arcade.View):
         self.sprites.append(inimigo)
 
     def criar_projetil(self, coordenada_x, coordenada_y, velocidade_projetil):
-        projetil = MovimentacaoProjetil(self)
+        projetil = Projetil(self)
 
         projetil.center_x = coordenada_x
         projetil.center_y = coordenada_y
@@ -135,7 +138,9 @@ class TelaJogo(arcade.View):
             coordenada_y = self.jogador.center_y + 15
 
             self.criar_projetil(coordenada_x, coordenada_y, self.velocidade_movimentacao_projetil)
+            arcade.sound.play_sound(self.arquivo_audio_disparo)
             self.criar_projetil(coordenada_x, coordenada_y - 30, self.velocidade_movimentacao_projetil)
+            arcade.sound.play_sound(self.arquivo_audio_disparo)
 
             self.horario_ultimo_disparo = datetime.now()
 
@@ -166,7 +171,7 @@ class TelaJogo(arcade.View):
         arcade.draw_text("Pontos : {}".format(self.score), 10, altura_janela - 30, arcade.csscolor.WHITE, 13)
         arcade.draw_text("P : Pause", largura_janela - 89, altura_janela - 30, arcade.csscolor.WHITE, 13)
 
-class MovimentacaoInimigo(arcade.Sprite):
+class Inimigo(arcade.Sprite):
     def update(self):
         super().update()
 
@@ -174,7 +179,7 @@ class MovimentacaoInimigo(arcade.Sprite):
             self.remove_from_sprite_lists()
 
 
-class MovimentacaoProjetil(arcade.Sprite):
+class Projetil(arcade.Sprite):
     def __init__(self, campoCombate: TelaJogo):
         super().__init__(campoCombate.arquivo_sprite_projetil)
 
@@ -209,6 +214,7 @@ class MovimentacaoProjetil(arcade.Sprite):
                 self.campoCombate.sprites.append(fumaca)
 
                 inimigo_atingido.remove_from_sprite_lists()
+                arcade.sound.play_sound(self.campoCombate.arquivo_audio_explosao)
                 self.campoCombate.score += 1
 
 
