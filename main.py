@@ -7,9 +7,9 @@ largura_janela = 800
 altura_janela = 600
 titulo_janela = "Jogo - Destruidor de Asteróides"
 
-class CampoCombate(arcade.Window):
-    def __init__(self, largura, altura, titulo):
-        super().__init__(largura, altura, titulo)
+class TelaJogo(arcade.View):
+    def __init__(self):
+        super().__init__()
 
         self.sprites_inimigos = arcade.SpriteList()
         self.sprites_projeteis = arcade.SpriteList()
@@ -17,21 +17,24 @@ class CampoCombate(arcade.Window):
         self.sprites = arcade.SpriteList()
 
     def configurar_jogo(self):
+        self.sprites_inimigos = arcade.SpriteList()
+        self.sprites_projeteis = arcade.SpriteList()
+        self.sprites_explosoes = arcade.SpriteList()
+        self.sprites = arcade.SpriteList()
+
         self.camera_placar = arcade.Camera(largura_janela, altura_janela)
-        self.camera_jogo_pausado = arcade.Camera(largura_janela, altura_janela)
+
         arcade.set_background_color(arcade.color.BLACK)
 
         self.arquivo_sprite_nave = "venv/Sprites/sprite_nave_espacial.png"
         self.arquivo_sprite_inimigo = "venv/Sprites/sprite_asteroide.png"
         self.arquivo_sprite_projetil = "venv/Sprites/sprite_projetil.png"
 
-        self.jogo_pausado = False
-        self.texto_pausa = ""
         self.score = 0
         self.horario_inicio_fase = datetime.now()
 
         self.jogador = arcade.Sprite(self.arquivo_sprite_nave)
-        self.jogador.center_y = self.height / 2
+        self.jogador.center_y = altura_janela / 2
         self.jogador.left = 10
 
         self.horario_criacao_ultimo_inimigo = datetime.now()
@@ -68,8 +71,8 @@ class CampoCombate(arcade.Window):
     def criar_inimigo(self, velocidade):
         inimigo = MovimentacaoInimigo(self.arquivo_sprite_inimigo)
 
-        inimigo.left = random.randint(self.width, self.width + 10)
-        inimigo.top = random.randint(15, self.height - 55)
+        inimigo.left = random.randint(largura_janela, largura_janela + 10)
+        inimigo.top = random.randint(15, altura_janela - 55)
 
         inimigo.velocity = (velocidade, 0)
 
@@ -87,21 +90,18 @@ class CampoCombate(arcade.Window):
         self.sprites_projeteis.append(projetil)
         self.sprites.append(projetil)
 
-    def on_key_press(self, simbolo, modificadores):
-        if simbolo == arcade.key.Q:
-            arcade.close_window()
+    def on_key_press(self, tecla, modificadores):
+        if tecla == arcade.key.P:
+            tela_pausa = TelaPausa(self)
+            self.window.show_view(tela_pausa)
 
-        if simbolo == arcade.key.P:
-            self.jogo_pausado = not self.jogo_pausado
-            self.texto_pausa = "" if not self.jogo_pausado else "Jogo Pausado"
-
-        if simbolo == arcade.key.UP:
+        if tecla == arcade.key.UP:
             self.jogador.change_y = 5
 
-        if simbolo == arcade.key.DOWN:
+        if tecla == arcade.key.DOWN:
             self.jogador.change_y = -5
 
-        if simbolo == arcade.key.SPACE:
+        if tecla == arcade.key.SPACE:
             self.disparar_projeteis = True
 
     def on_key_release(self, simbolo, modificadores):
@@ -112,8 +112,9 @@ class CampoCombate(arcade.Window):
             self.disparar_projeteis = False
 
     def on_update(self, delta_time):
-        if self.jogo_pausado:
-            return
+        if self.jogador.collides_with_list(self.sprites_inimigos):
+            tela_game_over = TelaGameOver(self.score)
+            self.window.show_view(tela_game_over)
 
         self.sprites.update()
 
@@ -138,8 +139,8 @@ class CampoCombate(arcade.Window):
 
             self.horario_ultimo_disparo = datetime.now()
 
-        if self.jogador.top > self.height - 40:
-            self.jogador.top = self.height - 40
+        if self.jogador.top > altura_janela - 40:
+            self.jogador.top = altura_janela - 40
 
         if self.jogador.bottom < 0:
             self.jogador.bottom = 0
@@ -163,9 +164,7 @@ class CampoCombate(arcade.Window):
 
         self.camera_placar.use()
         arcade.draw_text("Pontos : {}".format(self.score), 10, altura_janela - 30, arcade.csscolor.WHITE, 13)
-
-        self.camera_jogo_pausado.use()
-        arcade.draw_text("{}".format(self.texto_pausa), largura_janela - 125, altura_janela - 30, arcade.csscolor.WHITE, 13)
+        arcade.draw_text("P : Pause", largura_janela - 89, altura_janela - 30, arcade.csscolor.WHITE, 13)
 
 class MovimentacaoInimigo(arcade.Sprite):
     def update(self):
@@ -176,7 +175,7 @@ class MovimentacaoInimigo(arcade.Sprite):
 
 
 class MovimentacaoProjetil(arcade.Sprite):
-    def __init__(self, campoCombate: CampoCombate):
+    def __init__(self, campoCombate: TelaJogo):
         super().__init__(campoCombate.arquivo_sprite_projetil)
 
         self.sprites_inimigos = campoCombate.sprites_inimigos
@@ -214,7 +213,7 @@ class MovimentacaoProjetil(arcade.Sprite):
 
 
 class Fumaca(arcade.SpriteCircle):
-    def __init__(self, tamanho, campoCombate: CampoCombate):
+    def __init__(self, tamanho, campoCombate: TelaJogo):
         super().__init__(tamanho, arcade.color.LIGHT_GRAY, soft=True)
 
         self.inicio_escala_fumaca = campoCombate.inicio_escala_fumaca
@@ -235,7 +234,7 @@ class Fumaca(arcade.SpriteCircle):
 
 
 class Particula(arcade.SpriteCircle):
-    def __init__(self, lista_sprites_explosoes, campoCombate: CampoCombate):
+    def __init__(self, lista_sprites_explosoes, campoCombate: TelaJogo):
         cor_particula = random.choice(campoCombate.lista_cores_particulas)
 
         super().__init__(campoCombate.tamanho_particula, cor_particula)
@@ -276,7 +275,169 @@ class Particula(arcade.SpriteCircle):
                 self.lista_sprites_explosoes.append(fumaca)
 
 
+class TelaGameOver(arcade.View):
+    def __init__(self, pontuacao):
+        super().__init__()
+        self.pontuacao = pontuacao
+
+    def on_show_view(self):
+        arcade.set_background_color(arcade.color.BLACK)
+        arcade.set_viewport(0, largura_janela, 0, altura_janela)
+
+    def on_draw(self):
+        self.clear()
+        arcade.draw_text("GAME OVER",
+                         self.window.width / 2,
+                         self.window.height - 100,
+                         arcade.color.WHITE,
+                         font_size=50,
+                         anchor_x="center")
+
+        arcade.draw_text("Pontuação : {}".format(self.pontuacao),
+                         self.window.width / 2,
+                         self.window.height - 250,
+                         arcade.color.WHITE,
+                         font_size=25,
+                         anchor_x="center")
+
+        arcade.draw_text("Pressione ENTER para jogar novamente",
+                         self.window.width / 2,
+                         self.window.height - 500,
+                         arcade.color.WHITE,
+                         font_size=20,
+                         anchor_x="center")
+
+        arcade.draw_text("Pressione Q para fechar o jogo",
+                         self.window.width / 2,
+                         self.window.height - 540,
+                         arcade.color.WHITE,
+                         font_size=20,
+                         anchor_x="center")
+
+    def on_key_press(self, tecla, modificadores):
+        if tecla == arcade.key.ENTER:
+            tela_jogo = TelaJogo()
+            tela_jogo.configurar_jogo()
+            self.window.show_view(tela_jogo)
+
+        if tecla == arcade.key.Q:
+            tela_inicial = TelaInicial()
+            self.window.show_view(tela_inicial)
+
+
+class TelaPausa(arcade.View):
+    def __init__(self, tela_jogo):
+        super().__init__()
+        self.tela_jogo = tela_jogo
+
+    def on_show_view(self):
+        arcade.set_background_color(arcade.color.BLACK)
+        arcade.set_viewport(0, largura_janela, 0, altura_janela)
+
+    def on_draw(self):
+        self.clear()
+        arcade.draw_text("JOGO PAUSADO",
+                         self.window.width / 2,
+                         self.window.height - 100,
+                         arcade.color.WHITE,
+                         font_size=50,
+                         anchor_x="center")
+
+        arcade.draw_text("CONTROLES",
+                         self.window.width / 2,
+                         self.window.height - 180,
+                         arcade.color.WHITE,
+                         font_size=25,
+                         anchor_x="center")
+
+        arcade.draw_text("Espaço{}Atirar".format("." * 58),
+                         80,
+                         self.window.height - 240,
+                         arcade.color.WHITE,
+                         font_size=20)
+
+        arcade.draw_text("Seta para cima{}Subir a nave".format("." * 36),
+                         80,
+                         self.window.height - 280,
+                         arcade.color.WHITE,
+                         font_size=20)
+
+        arcade.draw_text("Seta para baixo{}Descer a nave".format("." * 32),
+                         80,
+                         self.window.height - 320,
+                         arcade.color.WHITE,
+                         font_size=20)
+
+        arcade.draw_text("Pressione P para voltar ao jogo",
+                         self.window.width / 2,
+                         self.window.height - 500,
+                         arcade.color.WHITE,
+                         font_size=20,
+                         anchor_x="center")
+
+        arcade.draw_text("Pressione Q para sair do jogo",
+                         self.window.width / 2,
+                         self.window.height - 540,
+                         arcade.color.WHITE,
+                         font_size=20,
+                         anchor_x="center")
+
+    def on_key_press(self, tecla, modificadores):
+        if tecla == arcade.key.P:
+            self.window.show_view(self.tela_jogo)
+
+        if tecla == arcade.key.Q:
+            tela_inicial = TelaInicial()
+            self.window.show_view(tela_inicial)
+
+
+class TelaInicial(arcade.View):
+    def on_show_view(self):
+        arcade.set_background_color(arcade.color.BLACK)
+        arcade.set_viewport(0, largura_janela, 0, altura_janela)
+
+    def on_draw(self):
+        self.clear()
+        arcade.draw_text("Destruidor de",
+                         self.window.width / 2,
+                         self.window.height - 150,
+                         arcade.color.WHITE,
+                         font_size=50,
+                         anchor_x="center")
+
+        arcade.draw_text("Asteróides",
+                         self.window.width / 2,
+                         self.window.height - 230,
+                         arcade.color.WHITE,
+                         font_size=50,
+                         anchor_x="center")
+
+        arcade.draw_text("Pressione ENTER para jogar",
+                         self.window.width / 2,
+                         self.window.height - 500,
+                         arcade.color.WHITE,
+                         font_size=20,
+                         anchor_x="center")
+
+        arcade.draw_text("Pressione Q para fechar o jogo",
+                         self.window.width / 2,
+                         self.window.height - 540,
+                         arcade.color.WHITE,
+                         font_size=20,
+                         anchor_x="center")
+
+    def on_key_press(self, tecla, modificadores):
+        if tecla == arcade.key.ENTER:
+            tela_jogo = TelaJogo()
+            tela_jogo.configurar_jogo()
+            self.window.show_view(tela_jogo)
+
+        if tecla == arcade.key.Q:
+            self.window.close()
+
+
 if __name__ == "__main__":
-    space_game = CampoCombate(largura_janela, altura_janela, titulo_janela)
-    space_game.configurar_jogo()
+    janela = arcade.Window(largura_janela, altura_janela, titulo_janela)
+    tela_inicial = TelaInicial()
+    janela.show_view(tela_inicial)
     arcade.run()
