@@ -4,8 +4,6 @@ import random
 largura_janela = 800
 altura_janela = 600
 titulo_janela = "Jogo - Destruidor de Asteróides"
-velocidade_projetil = 5
-
 
 class CampoCombate(arcade.Window):
     def __init__(self, largura, altura, titulo):
@@ -19,7 +17,16 @@ class CampoCombate(arcade.Window):
         arcade.set_background_color(arcade.color.YELLOW_ORANGE)
 
         self.jogo_pausado = False
-        self.jogador = arcade.Sprite("venv/Sprites/sprite_nave_espacial.png")
+        self.disparar_projeteis = False
+        self.tempo_desde_ultimo_disparo = 0
+        self.tempo_espera_proximo_disparo = 10
+        self.velocidade_projetil = 5
+
+        self.arquivo_sprite_nave = "venv/Sprites/sprite_nave_espacial.png"
+        self.arquivo_sprite_inimigo = "venv/Sprites/sprite_asteroide.png"
+        self.arquivo_sprite_projetil = "venv/Sprites/sprite_projetil.png"
+
+        self.jogador = arcade.Sprite(self.arquivo_sprite_nave)
 
         self.jogador.center_y = self.height / 2
         self.jogador.left = 10
@@ -29,7 +36,7 @@ class CampoCombate(arcade.Window):
         arcade.schedule(self.criar_inimigo, 1.0)
 
     def criar_inimigo(self, delta_time: float):
-        inimigo = MovimentacaoInimigo("venv/Sprites/sprite_asteroide.png")
+        inimigo = MovimentacaoInimigo(self.arquivo_sprite_inimigo)
 
         inimigo.left = random.randint(self.width, self.width + 10)
         inimigo.top = random.randint(10, self.height - 10)
@@ -40,7 +47,7 @@ class CampoCombate(arcade.Window):
         self.sprites.append(inimigo)
 
     def criar_projetil(self, coordenada_x, coordenada_y, velocidade_projetil):
-        projetil = MovimentacaoProjetil("venv/Sprites/sprite_projetil.png", self.sprites_inimigos)
+        projetil = MovimentacaoProjetil(self.arquivo_sprite_projetil, self.sprites_inimigos)
 
         projetil.center_x = coordenada_x
         projetil.center_y = coordenada_y
@@ -70,11 +77,7 @@ class CampoCombate(arcade.Window):
             self.jogador.change_x = 5
 
         if simbolo == arcade.key.SPACE:
-            coordenada_x = self.jogador.center_x + 10
-            coordenada_y = self.jogador.center_y + 15
-
-            self.criar_projetil(coordenada_x, coordenada_y, 3)
-            self.criar_projetil(coordenada_x, coordenada_y - 30, 3)
+            self.disparar_projeteis = True
 
     def on_key_release(self, simbolo, modificadores):
         if simbolo == arcade.key.UP or simbolo == arcade.key.DOWN:
@@ -82,6 +85,9 @@ class CampoCombate(arcade.Window):
 
         if simbolo == arcade.key.LEFT or simbolo == arcade.key.RIGHT:
             self.jogador.change_x = 0
+
+        if simbolo == arcade.key.SPACE:
+            self.disparar_projeteis = False
 
     def on_update(self, delta_time):
         if self.jogo_pausado:
@@ -92,6 +98,18 @@ class CampoCombate(arcade.Window):
         for sprite in self.sprites:
             sprite.center_x = int(sprite.center_x + sprite.change_x * delta_time)
             sprite.center_y = int(sprite.center_y + sprite.change_y * delta_time)
+
+        if self.tempo_desde_ultimo_disparo < self.tempo_espera_proximo_disparo:
+            self.tempo_desde_ultimo_disparo += 1
+
+        if self.disparar_projeteis and self.tempo_desde_ultimo_disparo == self.tempo_espera_proximo_disparo:
+            coordenada_x = self.jogador.center_x + 10
+            coordenada_y = self.jogador.center_y + 15
+
+            self.criar_projetil(coordenada_x, coordenada_y, 3)
+            self.criar_projetil(coordenada_x, coordenada_y - 30, 3)
+
+            self.tempo_desde_ultimo_disparo = 0
 
         if self.jogador.top > self.height:
             self.jogador.top = self.height
