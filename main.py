@@ -70,21 +70,12 @@ class CampoCombate(arcade.Window):
         if simbolo == arcade.key.DOWN:
             self.jogador.change_y = -5
 
-        if simbolo == arcade.key.LEFT:
-            self.jogador.change_x = -5
-
-        if simbolo == arcade.key.RIGHT:
-            self.jogador.change_x = 5
-
         if simbolo == arcade.key.SPACE:
             self.disparar_projeteis = True
 
     def on_key_release(self, simbolo, modificadores):
         if simbolo == arcade.key.UP or simbolo == arcade.key.DOWN:
             self.jogador.change_y = 0
-
-        if simbolo == arcade.key.LEFT or simbolo == arcade.key.RIGHT:
-            self.jogador.change_x = 0
 
         if simbolo == arcade.key.SPACE:
             self.disparar_projeteis = False
@@ -114,14 +105,8 @@ class CampoCombate(arcade.Window):
         if self.jogador.top > self.height:
             self.jogador.top = self.height
 
-        if self.jogador.right > self.width:
-            self.jogador.right = self.width
-
         if self.jogador.bottom < 0:
             self.jogador.bottom = 0
-
-        if self.jogador.left < 0:
-            self.jogador.left = 0
 
     def on_draw(self):
         arcade.start_render()
