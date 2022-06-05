@@ -17,13 +17,18 @@ class CampoCombate(arcade.Window):
         self.sprites = arcade.SpriteList()
 
     def configurar_jogo(self):
+        self.camera_placar = arcade.Camera(largura_janela, altura_janela)
+        self.camera_jogo_pausado = arcade.Camera(largura_janela, altura_janela)
         arcade.set_background_color(arcade.color.BLACK)
+
         self.arquivo_sprite_nave = "venv/Sprites/sprite_nave_espacial.png"
         self.arquivo_sprite_inimigo = "venv/Sprites/sprite_asteroide.png"
         self.arquivo_sprite_projetil = "venv/Sprites/sprite_projetil.png"
 
-        self.horario_inicio_fase = datetime.now()
         self.jogo_pausado = False
+        self.texto_pausa = ""
+        self.score = 0
+        self.horario_inicio_fase = datetime.now()
 
         self.jogador = arcade.Sprite(self.arquivo_sprite_nave)
         self.jogador.center_y = self.height / 2
@@ -64,7 +69,7 @@ class CampoCombate(arcade.Window):
         inimigo = MovimentacaoInimigo(self.arquivo_sprite_inimigo)
 
         inimigo.left = random.randint(self.width, self.width + 10)
-        inimigo.top = random.randint(10, self.height - 10)
+        inimigo.top = random.randint(15, self.height - 55)
 
         inimigo.velocity = (velocidade, 0)
 
@@ -88,6 +93,7 @@ class CampoCombate(arcade.Window):
 
         if simbolo == arcade.key.P:
             self.jogo_pausado = not self.jogo_pausado
+            self.texto_pausa = "" if not self.jogo_pausado else "Jogo Pausado"
 
         if simbolo == arcade.key.UP:
             self.jogador.change_y = 5
@@ -132,8 +138,8 @@ class CampoCombate(arcade.Window):
 
             self.horario_ultimo_disparo = datetime.now()
 
-        if self.jogador.top > self.height:
-            self.jogador.top = self.height
+        if self.jogador.top > self.height - 40:
+            self.jogador.top = self.height - 40
 
         if self.jogador.bottom < 0:
             self.jogador.bottom = 0
@@ -155,6 +161,11 @@ class CampoCombate(arcade.Window):
 
         self.sprites.draw()
 
+        self.camera_placar.use()
+        arcade.draw_text("Pontos : {}".format(self.score), 10, altura_janela - 30, arcade.csscolor.WHITE, 13)
+
+        self.camera_jogo_pausado.use()
+        arcade.draw_text("{}".format(self.texto_pausa), largura_janela - 125, altura_janela - 30, arcade.csscolor.WHITE, 13)
 
 class MovimentacaoInimigo(arcade.Sprite):
     def update(self):
@@ -199,6 +210,7 @@ class MovimentacaoProjetil(arcade.Sprite):
                 self.campoCombate.sprites.append(fumaca)
 
                 inimigo_atingido.remove_from_sprite_lists()
+                self.campoCombate.score += 1
 
 
 class Fumaca(arcade.SpriteCircle):
