@@ -6,7 +6,7 @@ from pathlib import Path
 
 largura_janela = 800
 altura_janela = 600
-titulo_janela = "Jogo - Destruidor de Asteróides"
+titulo_janela = "Jogo - Destruidor de Asteroides"
 
 class TelaJogo(arcade.View):
     def __init__(self):
@@ -414,7 +414,7 @@ class TelaInicial(arcade.View):
                          font_size=50,
                          anchor_x="center")
 
-        arcade.draw_text("Asteróides",
+        arcade.draw_text("Asteroides",
                          self.window.width / 2,
                          self.window.height - 230,
                          arcade.color.WHITE,
