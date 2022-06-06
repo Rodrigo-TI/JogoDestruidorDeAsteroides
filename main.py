@@ -1,6 +1,7 @@
 import arcade
 import random
 import math
+import pathlib
 from datetime import datetime
 
 largura_janela = 800
@@ -26,9 +27,11 @@ class TelaJogo(arcade.View):
 
         arcade.set_background_color(arcade.color.BLACK)
 
-        self.arquivo_sprite_nave = "venv/Sprites/sprite_nave_espacial.png"
-        self.arquivo_sprite_inimigo = "venv/Sprites/sprite_asteroide.png"
-        self.arquivo_sprite_projetil = "venv/Sprites/sprite_projetil.png"
+        caminho = (pathlib.Path(__file__).parent.absolute())
+
+        self.arquivo_sprite_nave = "{}/Sprites/sprite_nave_espacial.png".format(caminho)
+        self.arquivo_sprite_inimigo = "{}/Sprites/sprite_asteroide.png".format(caminho)
+        self.arquivo_sprite_projetil = "{}/Sprites/sprite_projetil.png".format(caminho)
 
         self.arquivo_audio_disparo = arcade.sound.load_sound(":resources:sounds/laser2.wav")
         self.arquivo_audio_explosao = arcade.sound.load_sound(":resources:sounds/explosion2.wav")
